@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="wrist_camera">
+    <static>true</static>
+
+    <link name="wrist_camera_link">
+      <pose>0 0 0 0 0 0</pose>
+
+      <visual name="camera_body_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.08 0.03 0.03</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.02 0.02 0.02 1</ambient>
+          <diffuse>0.02 0.02 0.02 1</diffuse>
+        </material>
+      </visual>
+
+      <collision name="camera_body_collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.08 0.03 0.03</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.00001</ixx>
+          <iyy>0.00001</iyy>
+          <izz>0.00001</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <sensor name="wrist_rgbd_camera" type="depth">
+        <pose>0 0 0 0 1.5708 0</pose>
+        <always_on>true</always_on>
+        <update_rate>15</update_rate>
+        <visualize>true</visualize>
+
+        <camera>
+          <horizontal_fov>1.047</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.05</near>
+            <far>3.0</far>
+          </clip>
+        </camera>
+
+        <plugin name="wrist_camera_controller" filename="libgazebo_ros_camera.so">
+          <ros>
+            <namespace>/wrist_camera</namespace>
+          </ros>
+          <camera_name>camera</camera_name>
+          <frame_name>wrist_camera_link</frame_name>
+          <image_topic_name>image_raw</image_topic_name>
+          <camera_info_topic_name>camera_info</camera_info_topic_name>
+          <depth_image_topic_name>depth/image_raw</depth_image_topic_name>
+          <point_cloud_topic_name>points</point_cloud_topic_name>
+        </plugin>
+      </sensor>
+    </link>
+  </model>
+</sdf>

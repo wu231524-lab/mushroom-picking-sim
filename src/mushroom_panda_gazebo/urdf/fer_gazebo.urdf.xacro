@@ -1,0 +1,474 @@
+<?xml version="1.0"?>
+<robot
+  xmlns:xacro="http://www.ros.org/wiki/xacro"
+  name="mushroom_fer">
+
+  <!-- 控制器参数文件由启动文件传入 -->
+  <xacro:arg name="controllers_file" default=""/>
+  <xacro:arg name="enable_control" default="true"/>
+    <!-- 机械臂底座在 world 中的可配置位姿 -->
+  <xacro:arg name="base_x" default="0.0"/>
+  <xacro:arg name="base_y" default="0.0"/>
+  <xacro:arg name="base_z" default="0.0"/>
+  <xacro:arg name="base_yaw" default="0.0"/>
+
+  <!-- franka_robot.xacro 内部会读取这个全局参数 -->
+  <xacro:arg name="special_connection" default=""/>
+
+  <xacro:include
+    filename="$(find franka_description)/robots/common/franka_robot.xacro"/>
+      <!--
+    轻量化连杆：
+    避免加载会使当前 Gazebo Classic 卡死的 FER DAE/STL 网格。
+  -->
+  <xacro:macro
+    name="link_with_sc"
+    params="name no_prefix:='false' rpy:='0 0 0'
+            **self_collision_geometries
+            gazebo:=false with_sc:=false">
+
+    <xacro:property
+      name="prefix"
+      value="${'' if no_prefix else arm_prefix + arm_id + '_'}"/>
+
+    <xacro:property
+      name="body_radius"
+      value="${0.075 if name == 'link0' else 0.05}"/>
+
+    <link name="${prefix}${name}">
+      <visual name="${prefix}${name}_visual">
+        <geometry>
+          <sphere radius="${body_radius}"/>
+        </geometry>
+        <material name="fer_light_grey">
+          <color rgba="0.75 0.75 0.78 1.0"/>
+        </material>
+      </visual>
+
+      <collision name="${prefix}${name}_collision">
+        <geometry>
+          <sphere radius="${body_radius}"/>
+        </geometry>
+      </collision>
+
+      <xacro:franka-inertials name="${name}"/>
+    </link>
+  </xacro:macro>
+
+  <!-- 使用 FER 的完整物理参数 -->
+  <xacro:property
+    name="fer_joint_limits"
+    value="${xacro.load_yaml(
+      '$(find franka_description)/robots/fer/joint_limits.yaml')}"/>
+
+  <xacro:property
+    name="fer_kinematics"
+    value="${xacro.load_yaml(
+      '$(find franka_description)/robots/fer/kinematics.yaml')}"/>
+
+  <xacro:property
+    name="fer_inertials"
+    value="${xacro.load_yaml(
+      '$(find franka_description)/robots/fer/inertials.yaml')}"/>
+
+  <xacro:property
+    name="fer_dynamics"
+    value="${xacro.load_yaml(
+      '$(find franka_description)/robots/fer/dynamics.yaml')}"/>
+
+  <!--
+    不启用 franka_description 自带的 gazebo/ros2_control：
+    其中的 ros2_control 插件面向 Ignition。
+    这里仅生成带惯量、碰撞和夹爪的完整机器人。
+  -->
+  <xacro:franka_robot
+    arm_id="fer"
+    joint_limits="${fer_joint_limits}"
+    kinematics="${fer_kinematics}"
+    inertials="${fer_inertials}"
+    dynamics="${fer_dynamics}"
+    connected_to="world"
+    xyz="$(arg base_x) $(arg base_y) $(arg base_z)"
+    rpy="0 0 $(arg base_yaw)"
+    hand="false"
+    ee_id="none"
+    gazebo="false"
+    with_sc="false"
+    ros2_control="false"
+    description_pkg="franka_description"/>
+
+      <!-- 轻量化夹爪基座 -->
+  <link name="fer_hand">
+    <visual>
+      <origin xyz="0 0 0.025"/>
+      <geometry>
+        <box size="0.11 0.08 0.05"/>
+      </geometry>
+      <material name="fer_dark_grey">
+        <color rgba="0.25 0.25 0.28 1.0"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0.025"/>
+      <geometry>
+        <box size="0.11 0.08 0.05"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 0.025"/>
+      <mass value="0.6"/>
+      <inertia
+        ixx="0.000445"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="0.000730"
+        iyz="0.0"
+        izz="0.000925"/>
+    </inertial>
+  </link>
+
+  <joint name="fer_hand_joint" type="fixed">
+    <parent link="fer_link8"/>
+    <child link="fer_hand"/>
+    <origin xyz="0 0 0" rpy="0 0 -0.78539816339"/>
+  </joint>
+
+  <!-- 左手指 -->
+  <link name="fer_leftfinger">
+    <visual>
+      <origin xyz="0 0 0.04"/>
+      <geometry>
+        <box size="0.018 0.018 0.08"/>
+      </geometry>
+      <material name="fer_dark_grey"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0.04"/>
+      <geometry>
+        <box size="0.018 0.018 0.08"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 0.04"/>
+      <mass value="0.08"/>
+      <inertia
+        ixx="0.000044"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="0.000044"
+        iyz="0.0"
+        izz="0.000004"/>
+    </inertial>
+  </link>
+
+  <joint name="fer_finger_joint1" type="prismatic">
+    <parent link="fer_hand"/>
+    <child link="fer_leftfinger"/>
+    <origin xyz="0 0 0.0584"/>
+    <axis xyz="0 1 0"/>
+    <limit
+      lower="0.0"
+      upper="0.04"
+      effort="40.0"
+      velocity="0.2"/>
+    <dynamics damping="0.2" friction="0.1"/>
+  </joint>
+
+  <!-- 右手指 -->
+  <link name="fer_rightfinger">
+    <visual>
+      <origin xyz="0 0 0.04"/>
+      <geometry>
+        <box size="0.018 0.018 0.08"/>
+      </geometry>
+      <material name="fer_dark_grey"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0.04"/>
+      <geometry>
+        <box size="0.018 0.018 0.08"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 0.04"/>
+      <mass value="0.08"/>
+      <inertia
+        ixx="0.000044"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="0.000044"
+        iyz="0.0"
+        izz="0.000004"/>
+    </inertial>
+  </link>
+
+  <joint name="fer_finger_joint2" type="prismatic">
+    <parent link="fer_hand"/>
+    <child link="fer_rightfinger"/>
+    <origin xyz="0 0 0.0584"/>
+    <axis xyz="0 -1 0"/>
+    <limit
+      lower="0.0"
+      upper="0.04"
+      effort="40.0"
+      velocity="0.2"/>
+    <dynamics damping="0.2" friction="0.1"/>
+    <mimic joint="fer_finger_joint1" multiplier="1.0"/>
+  </joint>
+
+  <!-- 夹爪中心工具坐标系 -->
+  <link name="fer_hand_tcp"/>
+
+  <joint name="fer_hand_tcp_joint" type="fixed">
+    <parent link="fer_hand"/>
+    <child link="fer_hand_tcp"/>
+    <origin xyz="0 0 0.1034"/>
+  </joint>
+
+  <!--
+    DAY10：末端随动近距离 RGB-D 相机。
+    相机从 TCP 侧面向抓取中心内倾约 20 度。
+    第一版不添加 collision。
+  -->
+
+  <link name="d405_link">
+    <visual name="d405_body_visual">
+      <geometry>
+        <box size="0.023 0.045 0.045"/>
+      </geometry>
+
+      <material name="d405_dark_grey">
+        <color rgba="0.08 0.08 0.09 1.0"/>
+      </material>
+    </visual>
+
+    <inertial>
+      <mass value="0.02"/>
+
+      <inertia
+        ixx="0.00000675"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="0.00000426"
+        iyz="0.0"
+        izz="0.00000426"/>
+    </inertial>
+  </link>
+
+  <joint name="d405_mount_joint" type="fixed">
+    <parent link="fer_hand_tcp"/>
+    <child link="d405_link"/>
+
+    <!--
+      Gazebo 相机以 +X 为成像前方。
+      pitch=-110 度使相机沿接近方向向下，
+      同时向夹爪抓取中心内倾约 20 度。
+    -->
+    <origin
+      xyz="0.080 0 -0.030"
+      rpy="0 -1.91986217719 0"/>
+  </joint>
+
+  <link name="d405_optical_frame"/>
+
+  <joint name="d405_optical_joint" type="fixed">
+    <parent link="d405_link"/>
+    <child link="d405_optical_frame"/>
+
+    <!-- Gazebo camera frame 到 ROS optical frame。 -->
+    <origin
+      xyz="0 0 0"
+      rpy="-1.57079632679 0 -1.57079632679"/>
+  </joint>
+
+  <gazebo reference="d405_link">
+    <gravity>false</gravity>
+
+    <sensor name="d405_rgbd_camera" type="depth">
+      <!-- 物理姿态全部由 d405_mount_joint 定义。 -->
+      <pose>0 0 0 0 0 0</pose>
+
+      <always_on>true</always_on>
+      <update_rate>15</update_rate>
+      <visualize>false</visualize>
+
+      <camera>
+        <horizontal_fov>1.3962634016</horizontal_fov>
+
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+
+        <clip>
+          <near>0.07</near>
+          <far>0.50</far>
+        </clip>
+      </camera>
+
+      <plugin
+        name="d405_camera_controller"
+        filename="libgazebo_ros_camera.so">
+
+        <ros>
+          <namespace>/d405</namespace>
+        </ros>
+
+        <camera_name>camera</camera_name>
+        <frame_name>d405_optical_frame</frame_name>
+
+        <min_depth>0.07</min_depth>
+        <max_depth>0.50</max_depth>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+
+    <!-- DAY8：轻量模型稳定性测试阶段，暂时关闭机器人重力。 -->
+  <gazebo reference="fer_link0">
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="fer_link1">
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="fer_link2">
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="fer_link3">
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="fer_link4">
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="fer_link5">
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="fer_link6">
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="fer_link7">
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="fer_link8">
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="fer_hand">
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="fer_leftfinger">
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="fer_rightfinger">
+    <gravity>false</gravity>
+  </gazebo>
+  <!-- Gazebo Classic 的 ros2_control 硬件接口 -->
+  <xacro:if value="$(arg enable_control)">
+  <ros2_control name="GazeboSystem" type="system">
+    <hardware>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+    </hardware>
+
+    <joint name="fer_joint1">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="fer_joint2">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">-0.785</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="fer_joint3">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="fer_joint4">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">-2.356</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="fer_joint5">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="fer_joint6">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">1.571</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="fer_joint7">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.785</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="fer_finger_joint1">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.04</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="fer_finger_joint2">
+      <param name="mimic">fer_finger_joint1</param>
+      <param name="multiplier">1.0</param>
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.04</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+  <!-- Gazebo Classic 控制插件 -->
+  <gazebo>
+    <plugin
+      name="gazebo_ros2_control"
+      filename="libgazebo_ros2_control.so">
+      <parameters>$(arg controllers_file)</parameters>
+    </plugin>
+  </gazebo>
+  </xacro:if>
+
+  <!-- 增大夹爪接触面的摩擦力 -->
+  <gazebo reference="fer_leftfinger">
+    <mu1>1.13</mu1>
+    <mu2>1.13</mu2>
+  </gazebo>
+
+  <gazebo reference="fer_rightfinger">
+    <mu1>1.13</mu1>
+    <mu2>1.13</mu2>
+  </gazebo>
+
+</robot>

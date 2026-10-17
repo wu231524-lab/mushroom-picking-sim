@@ -1,0 +1,185 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="mushroom_field_world">
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <model name="planting_bed">
+      <static>true</static>
+      <pose>0 0 0.08 0 0 0</pose>
+      <link name="bed_link">
+        <visual name="bed_visual">
+          <geometry>
+            <box>
+              <size>2.0 1.0 0.16</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.18 0.11 0.06 1</ambient>
+            <diffuse>0.22 0.13 0.07 1</diffuse>
+          </material>
+        </visual>
+        <collision name="bed_collision">
+          <geometry>
+            <box>
+              <size>2.0 1.0 0.16</size>
+            </box>
+          </geometry>
+        </collision>
+      </link>
+    </model>
+
+    <model name="mushroom_1">
+      <static>true</static>
+      <pose>-0.55 -0.25 0.23 0 0 0</pose>
+      <link name="stem_link">
+        <visual name="stem_visual">
+          <geometry>
+            <cylinder>
+              <radius>0.035</radius>
+              <length>0.16</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.95 0.93 0.86 1</ambient>
+            <diffuse>0.95 0.93 0.86 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="cap_link">
+        <pose>0 0 0.10 0 0 0</pose>
+        <visual name="cap_visual">
+          <geometry>
+            <sphere>
+              <radius>0.075</radius>
+            </sphere>
+          </geometry>
+          <scale>1 1 0.45</scale>
+          <material>
+            <ambient>0.98 0.97 0.92 1</ambient>
+            <diffuse>0.98 0.97 0.92 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="mushroom_2">
+      <static>true</static>
+      <pose>-0.20 0.18 0.23 0 0 0</pose>
+      <link name="stem_link">
+        <visual name="stem_visual">
+          <geometry>
+            <cylinder>
+              <radius>0.03</radius>
+              <length>0.14</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.95 0.93 0.86 1</ambient>
+            <diffuse>0.95 0.93 0.86 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="cap_link">
+        <pose>0 0 0.09 0 0 0</pose>
+        <visual name="cap_visual">
+          <geometry>
+            <sphere>
+              <radius>0.065</radius>
+            </sphere>
+          </geometry>
+          <scale>1 1 0.45</scale>
+          <material>
+            <ambient>0.98 0.97 0.92 1</ambient>
+            <diffuse>0.98 0.97 0.92 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="mushroom_3">
+      <static>true</static>
+      <pose>0.30 -0.12 0.23 0 0 0</pose>
+      <link name="stem_link">
+        <visual name="stem_visual">
+          <geometry>
+            <cylinder>
+              <radius>0.032</radius>
+              <length>0.15</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.95 0.93 0.86 1</ambient>
+            <diffuse>0.95 0.93 0.86 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="cap_link">
+        <pose>0 0 0.095 0 0 0</pose>
+        <visual name="cap_visual">
+          <geometry>
+            <sphere>
+              <radius>0.07</radius>
+            </sphere>
+          </geometry>
+          <scale>1 1 0.45</scale>
+          <material>
+            <ambient>0.98 0.97 0.92 1</ambient>
+            <diffuse>0.98 0.97 0.92 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="mushroom_4">
+      <static>true</static>
+      <pose>0.62 0.25 0.23 0 0 0</pose>
+      <link name="stem_link">
+        <visual name="stem_visual">
+          <geometry>
+            <cylinder>
+              <radius>0.038</radius>
+              <length>0.17</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.95 0.93 0.86 1</ambient>
+            <diffuse>0.95 0.93 0.86 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="cap_link">
+        <pose>0 0 0.105 0 0 0</pose>
+        <visual name="cap_visual">
+          <geometry>
+            <sphere>
+              <radius>0.08</radius>
+            </sphere>
+          </geometry>
+          <scale>1 1 0.45</scale>
+          <material>
+            <ambient>0.98 0.97 0.92 1</ambient>
+            <diffuse>0.98 0.97 0.92 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- DAY8: 提供实体位姿读取与更新服务，用于简化抓取跟随。 -->
+    <plugin
+      name="gazebo_ros_state"
+      filename="libgazebo_ros_state.so">
+      <ros>
+        <namespace>/gazebo</namespace>
+      </ros>
+      <update_rate>30.0</update_rate>
+    </plugin>
+
+  </world>
+</sdf>
